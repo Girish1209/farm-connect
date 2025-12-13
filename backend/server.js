@@ -1,10 +1,19 @@
 const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
 const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
 
 app.get('/', (req, res) => {
-    res.send('Hello from Farm Connect Backend! Day 1 Setup Complete 🎉');
+    res.send('Farm Connect Backend Running! Day 2 Complete 🌟');
 });
 
-app.listen(5000, () => {
-    console.log('Server running on port 5000');
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
