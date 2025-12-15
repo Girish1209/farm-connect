@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
+import api from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -7,33 +8,50 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadUser = async () => {
     const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    try {
+      const profileRes = await api.get('/users/profile');
+      const fullUser = profileRes.data;
+      setUser(fullUser);
+      localStorage.setItem('user', JSON.stringify(fullUser));
+    } catch (err) {
+      console.error('Profile load failed:', err);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUser();
   }, []);
 
   const login = async (email, password) => {
-    const res = await authAPI.login({ email, password });
-    localStorage.setItem('token', res.data.token);
-    // You can fetch user details here later
-    setUser({ email });
-    localStorage.setItem('user', JSON.stringify({ email }));
+    try {
+      const res = await authAPI.login({ email, password });
+      localStorage.setItem('token', res.data.token);
+      await loadUser();
+    } catch (err) {
+      throw err;
+    }
   };
 
   const register = async (data) => {
-  try {
-    const res = await authAPI.register(data);
-    console.log('Register response:', res); // For debugging
-    return res;
-  } catch (err) {
-    console.error('Register error:', err);
-    throw err; // So alert shows in page
-  }
-};
+    try {
+      const res = await authAPI.register(data);
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -42,7 +60,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, login, register, logout, loading, loadUser }}>
       {children}
     </AuthContext.Provider>
   );

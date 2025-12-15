@@ -1,8 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
+const axios = require('axios');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+const path = require('path');
+const weatherRouter = require('./routes/weather');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +31,9 @@ app.use('/api/crops', require('./routes/crop'));
 app.use('/api/orders', require('./routes/order'));
 app.use('/api/forum', require('./routes/forum'));
 app.use('/api/alerts', require('./routes/alert'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/users', require('./routes/user'));
+app.use('/api/weather', require('./routes/weather'));
 
 app.get('/', (req, res) => {
     res.send('Farm Connect Backend with Real-Time Socket.io Running! ⚡ Day 5 Complete');
@@ -47,6 +54,28 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('User disconnected 🔴');
     });
+});
+
+cron.schedule('0 */6 * * *', async () => {
+  try {
+    const res = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=Delhi&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`);
+    if (res.data.weather[0].main.toLowerCase().includes('rain')) {
+      // Create alert (call your alert controller)
+      console.log('Rain detected – create alert!');
+    }
+  } catch (err) {}
+});
+
+
+io.on('connection', (socket) => {
+  socket.on('sendMessage', ({ sender_id, receiver_id, message }) => {
+    // Save to DB + emit
+    io.to(`user_${receiver_id}`).emit('newMessage', { sender_id, message });
+  });
+
+  socket.on('joinRoom', (user_id) => {
+    socket.join(`user_${user_id}`);
+  });
 });
 
 const PORT = process.env.PORT || 5000;

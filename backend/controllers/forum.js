@@ -2,41 +2,36 @@ const Forum = require('../models/forum');
 
 exports.createPost = (req, res) => {
     const { title, content } = req.body;
-    const user_id = req.user.id;
+    if (!title || !content) return res.status(400).json({ msg: 'Title and content required' });
 
-    Forum.createPost({ title, content, user_id }, (err, result) => {
+    Forum.createPost({ title, content, user_id: req.user.id }, (err, result) => {
         if (err) return res.status(500).json({ msg: 'Error creating post' });
-        
-        const postId = result.insertId;
-        // We will emit socket event later
-        res.status(201).json({ msg: 'Post created!', post_id: postId });
+        res.status(201).json({ msg: 'Post created!', post_id: result.insertId });
     });
 };
 
 exports.getPosts = (req, res) => {
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
     const search = req.query.search || '';
 
-    Forum.getAllPosts(page, limit, search, (err, results) => {
+    Forum.getAllPosts(page, 10, search, (err, results) => {
         if (err) return res.status(500).json({ msg: 'Server error' });
         res.json(results);
     });
 };
 
 exports.addComment = (req, res) => {
-    const { content } = req.body;
+    const { content, parent_id } = req.body;
     const { post_id } = req.params;
-    const user_id = req.user.id;
-    req.io.emit('newComment', newComment);  // We will pass io later
 
-    Forum.createComment({ content, user_id, post_id }, (err, result) => {
+    if (!content) return res.status(400).json({ msg: 'Content required' });
+
+    Forum.createComment({ content, user_id: req.user.id, post_id, parent_id }, (err, result) => {
         if (err) return res.status(500).json({ msg: 'Error adding comment' });
-        
-        // Get the comment with username
+
         Forum.getCommentsByPost(post_id, (err, comments) => {
-            const newComment = comments[comments.length - 1];
-            // We will emit this via socket
+            const newComment = comments.find(c => c.id === result.insertId);
+            req.io.emit('newComment', { post_id, comment: newComment });
             res.status(201).json({ msg: 'Comment added!', comment: newComment });
         });
     });
@@ -47,5 +42,33 @@ exports.getComments = (req, res) => {
     Forum.getCommentsByPost(post_id, (err, results) => {
         if (err) return res.status(500).json({ msg: 'Server error' });
         res.json(results);
+    });
+};
+
+exports.likePost = (req, res) => {
+    Forum.likePost(req.params.id, (err) => {
+        if (err) return res.status(500).json({ msg: 'Like failed' });
+        res.json({ msg: 'Post liked!' });
+    });
+};
+
+exports.likeComment = (req, res) => {
+    Forum.likeComment(req.params.id, (err) => {
+        if (err) return res.status(500).json({ msg: 'Like failed' });
+        res.json({ msg: 'Comment liked!' });
+    });
+};
+
+exports.deletePost = (req, res) => {
+    Forum.deletePost(req.params.id, req.user.id, (err) => {
+        if (err) return res.status(500).json({ msg: 'Delete failed' });
+        res.json({ msg: 'Post deleted' });
+    });
+};
+
+exports.deleteComment = (req, res) => {
+    Forum.deleteComment(req.params.id, req.user.id, (err) => {
+        if (err) return res.status(500).json({ msg: 'Delete failed' });
+        res.json({ msg: 'Comment deleted' });
     });
 };

@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/auth');
 
 router.post('/', authMiddleware, cropController.addCrop);
 router.get('/', cropController.getAllCrops);
-// Add more routes later: router.get('/:id'), put, delete
+router.put('/:id', authMiddleware, cropController.updateCrop);
+router.delete('/:id', authMiddleware, cropController.deleteCrop);
 
 module.exports = router;

@@ -28,15 +28,29 @@ export const userAPI = {
 };
 
 export const cropAPI = {
-  getAll: (page = 1, search = '') => api.get(`/crops?page=${page}&limit=9&search=${search}`),
-  addCrop: (formData) => api.post('/crops', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  getAll: (page = 1, search = '', category = '') => {
+    let url = `/crops?page=${page}&limit=9`;
+    
+    if (search && search.trim() !== '') {
+      url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+    
+    if (category && category !== 'all' && category !== '') {
+      url += `&category=${category}`;
+    }
+    
+    return api.get(url);
+  },
+  addCrop: (formData) => api.post('/crops', formData),
+  // If you have update/delete
+  // updateCrop: (id, formData) => api.put(`/crops/${id}`, formData),
+  // deleteCrop: (id) => api.delete(`/crops/${id}`),
 };
 
 export const orderAPI = {
   placeOrder: (data) => api.post('/orders', data),
   getMyOrders: (page = 1) => api.get(`/orders/my?page=${page}&limit=10`),
 };
+
 
 export default api;

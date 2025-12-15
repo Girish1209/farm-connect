@@ -23,11 +23,15 @@ const Navbar = () => {
             <Link to="/crops" className="hover:text-accent transition">Crops</Link>
             <Link to="/forum" className="hover:text-accent transition">Forum</Link>
             <Link to="/orders" className="hover:text-accent transition">Orders</Link>
+            <Link to="/alerts" className="hover:text-accent transition">🔔 Alerts</Link>
             {token ? (
               <>
                 <Link to="/profile" className="hover:text-accent transition">
                   👤 {user.username || 'Profile'}
                 </Link>
+                {user.role === 'admin' && (
+      <Link to="/admin" className="hover:text-accent transition">📊 Admin</Link>
+    )}
                 <button onClick={handleLogout} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
                   Logout
                 </button>

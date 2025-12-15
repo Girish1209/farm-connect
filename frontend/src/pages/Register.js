@@ -57,6 +57,7 @@ const Register = () => {
           >
             <option value="buyer">Buyer</option>
             <option value="farmer">Farmer</option>
+            <option value="admin">Admin</option>
           </select>
           <button type="submit" className="w-full bg-primary text-white py-3 rounded-lg hover:bg-green-700 transition text-lg font-semibold">
             Register
